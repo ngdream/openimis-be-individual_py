@@ -406,17 +406,17 @@ class GroupGQLMutationTest(IndividualGQLTestCase):
 
     @patch.object(IndividualConfig, 'check_group_delete', new=False)
     def test_delete_group_with_individual_row_security(self):
-        individual_a1, group_a1 = create_group_with_individual(
+        individual_a1, group_a1, group_individual_a1 = create_group_with_individual(
             self.admin_user.username,
             group_override={'location': self.village_a},
             individual_override={'location': self.village_a},
         )
-        individual_a2, group_a2 = create_group_with_individual(
+        individual_a2, group_a2, group_individual_a2 = create_group_with_individual(
             self.admin_user.username,
             group_override={'location': self.village_a},
             individual_override={'location': self.village_a},
         )
-        individual_b, group_b = create_group_with_individual(
+        individual_b, group_b, group_individual_b = create_group_with_individual(
             self.admin_user.username,
             group_override={'location': self.village_b},
             individual_override={'location': self.village_b},
@@ -470,7 +470,9 @@ class GroupGQLMutationTest(IndividualGQLTestCase):
         self.assert_mutation_success(internal_id)
 
         # SP officer B can delete group without any district
-        individual_no_loc, group_no_loc = create_group_with_individual(self.admin_user.username)
+        individual_no_loc, group_no_loc, group_individual_no_loc = create_group_with_individual(
+            self.admin_user.username
+        )
         group_individual_query = GroupIndividual.objects.filter(
             is_deleted=False,
             group=group_no_loc
