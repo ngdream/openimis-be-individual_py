@@ -121,7 +121,6 @@ class GroupServiceTest(TestCase):
     def test_delete_group_with_individual(self):
         individual1 = self.__create_individual()
         individual2 = self.__create_individual()
-        individual3 = self.__create_individual()
         payload_individuals = {
             'code': str(datetime.now()),
             'individuals_data': [

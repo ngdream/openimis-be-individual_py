@@ -348,6 +348,63 @@ class GroupGQLMutationTest(IndividualGQLTestCase):
         internal_id = content['data']['deleteGroup']['internalId']
         self.assert_mutation_success(internal_id)
 
+    @patch.object(IndividualConfig, 'check_group_delete', new=False)
+    def test_delete_group_with_individual_general_permission(self):
+        individual, group, group_individual = create_group_with_individual(self.admin_user.username)
+        query_str = f'''
+                mutation {{
+                  deleteGroup(
+                    input: {{
+                      ids: ["{group.id}"]
+                    }}
+                  ) {{
+                    clientMutationId
+                    internalId
+                  }}
+                }}
+            '''
+
+        # Anonymous User has no permission
+        response = self.query(query_str)
+
+        content = json.loads(response.content)
+        internal_id = content['data']['deleteGroup']['internalId']
+        self.assert_mutation_error(internal_id, _('mutation.authentication_required'))
+        group_individual_query = GroupIndividual.objects.filter(
+            is_deleted=False,
+            group=group
+        )
+        self.assertEqual(group_individual_query.count(), 1)
+
+        # Health Enrollment Officier (role=1) has no permission
+        response = self.query(
+            query_str,
+            headers={"HTTP_AUTHORIZATION": f"Bearer {self.med_enroll_officer_token}"}
+        )
+        content = json.loads(response.content)
+        internal_id = content['data']['deleteGroup']['internalId']
+        self.assert_mutation_error(internal_id, _('unauthorized'))
+        group_individual_query = GroupIndividual.objects.filter(
+            is_deleted=False,
+            group=group
+        )
+        self.assertEqual(group_individual_query.count(), 1)
+
+        # IMIS admin can do everything
+        response = self.query(
+            query_str,
+            headers={"HTTP_AUTHORIZATION": f"Bearer {self.admin_token}"}
+        )
+        content = json.loads(response.content)
+        internal_id = content['data']['deleteGroup']['internalId']
+        self.assert_mutation_success(internal_id)
+        group_individual_query = GroupIndividual.objects.filter(
+            is_deleted=False,
+            group=group
+        )
+        self.assertEqual(group_individual_query.count(), 0)
+
+
     def test_add_individual_to_group_general_permission(self):
         group = create_group(self.admin_user.username)
         individual = create_individual(self.admin_user.username)
